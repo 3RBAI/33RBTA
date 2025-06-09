@@ -2,6 +2,8 @@ import { DashboardStats } from "@/components/dashboard-stats"
 import { RecentCourses } from "@/components/recent-courses"
 import { LearningProgress } from "@/components/learning-progress"
 import { AIRecommendations } from "@/components/ai-recommendations"
+import { MentalHealthSupport } from "@/components/mental-health-support"
+import { PerformanceMonitor } from "@/components/performance-monitor"
 
 export default function DashboardPage() {
   return (
@@ -20,8 +22,10 @@ export default function DashboardPage() {
             <RecentCourses />
             <LearningProgress />
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
             <AIRecommendations />
+            <MentalHealthSupport />
+            <PerformanceMonitor />
           </div>
         </div>
       </div>

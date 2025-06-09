@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bot, Send, User } from "lucide-react"
+import { Bot, Send, User, Heart, AlertCircle } from "lucide-react"
 import { useState } from "react"
 
 interface Message {
@@ -37,21 +37,43 @@ export function AIAssistant() {
     }
 
     setMessages((prev) => [...prev, userMessage])
+    const currentInput = input
     setInput("")
     setIsLoading(true)
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: currentInput,
+          context: "دورة البرمجة - Python للمبتدئين",
+        }),
+      })
+
+      const data = await response.json()
+
       const aiMessage: Message = {
         id: messages.length + 2,
         type: "ai",
-        content:
-          "شكراً لسؤالك! هذا مثال على رد المساعد الذكي. في التطبيق الحقيقي، سيتم استخدام Google Gemini AI للإجابة على أسئلتك بذكاء.",
+        content: data.response || "عذراً، حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى.",
         timestamp: new Date(),
       }
+
       setMessages((prev) => [...prev, aiMessage])
+    } catch (error) {
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        type: "ai",
+        content: "عذراً، لا أستطيع الاتصال بالخادم حالياً. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+        timestamp: new Date(),
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -113,6 +135,22 @@ export function AIAssistant() {
             )}
           </div>
         </ScrollArea>
+
+        {/* أزرار الدعم السريع */}
+        <div className="flex gap-2 mb-4 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setInput("أشعر بالتوتر من الدراسة، كيف يمكنني التعامل مع ذلك؟")}
+          >
+            <Heart className="h-3 w-3 mr-1" />
+            دعم نفسي
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setInput("أحتاج مساعدة في فهم هذا الدرس")}>
+            <AlertCircle className="h-3 w-3 mr-1" />
+            مساعدة سريعة
+          </Button>
+        </div>
 
         <div className="flex gap-2">
           <Input
