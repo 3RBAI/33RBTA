@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bot, Send, User, Heart, AlertCircle } from "lucide-react"
-import { useState } from "react"
+import { Bot, Send, User, Heart, AlertCircle, RefreshCw } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
 
 interface Message {
   id: number
@@ -25,6 +25,18 @@ export function AIAssistant() {
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+
+  // التمرير التلقائي إلى أسفل عند إضافة رسائل جديدة
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight
+      }
+    }
+  }, [messages])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -63,30 +75,51 @@ export function AIAssistant() {
       }
 
       setMessages((prev) => [...prev, aiMessage])
+      setRetryCount(0) // إعادة تعيين عداد المحاولات عند النجاح
     } catch (error) {
+      console.error("خطأ في الاتصال:", error)
       const errorMessage: Message = {
         id: messages.length + 2,
         type: "ai",
-        content: "عذراً، لا أستطيع الاتصال بالخادم حالياً. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+        content: "عذراً، لا أستطيع الاتصال بالخادم حالياً. يمكنك المحاولة مرة أخرى أو طرح سؤال مختلف.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
+      setRetryCount((prev) => prev + 1)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // إعادة المحاولة مع آخر رسالة
+  const handleRetry = () => {
+    if (messages.length > 1) {
+      const lastUserMessage = [...messages].reverse().find((m) => m.type === "user")
+      if (lastUserMessage) {
+        setInput(lastUserMessage.content)
+      }
     }
   }
 
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Bot className="h-5 w-5 text-blue-600" />
-          مساعد AI الذكي
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-blue-600" />
+            مساعد AI الذكي
+          </div>
+          {retryCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={handleRetry} className="h-8 px-2">
+              <RefreshCw className="h-3 w-3 mr-1" />
+              إعادة المحاولة
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1 mb-4">
+        <ScrollArea className="flex-1 mb-4 pr-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -106,7 +139,7 @@ export function AIAssistant() {
                       message.type === "user" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               </div>
